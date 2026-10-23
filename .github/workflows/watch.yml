@@ -1,0 +1,44 @@
+name: Train watch
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"   # every 15 minutes (GitHub may start a few minutes late)
+  workflow_dispatch:          # adds a "Run workflow" button for a manual test
+
+permissions:
+  contents: write             # lets the bot save state.json (to avoid repeat alerts)
+
+concurrency:
+  group: train-watch
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install requests
+
+      - name: Check trains
+        env:
+          DATE_FROM: "2026-11-01"
+          DATE_TO: "2026-11-30"
+          MIN_SEATS: "4"
+          RUN_KIND: ${{ github.event_name }}
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python watch.py
+
+      - name: Save state
+        run: |
+          git config user.name "train-bot"
+          git config user.email "train-bot@users.noreply.github.com"
+          git add state.json
+          git diff --cached --quiet || git commit -m "update state"
+          git push || true
