@@ -1,5 +1,5 @@
 """
-Train watcher: Bangkok (Krung Thep Aphiwat) -> Chiang Mai, 2nd class sleeper.
+Train watcher: Bangkok (Krung Thep Aphiwat) -> Chiang Mai, 2nd class sleeper, new CNR coaches only.
 Checks the official SRT D-Ticket site and sends a Telegram message
 when 2nd-class sleeper berths appear.
 
@@ -91,6 +91,7 @@ def check_day(s, day):
             int(c.get("availableSeatCount") or 0)
             for c in coach.get("results", [])
             if c.get("coachClass") == "2" and c.get("coachSeatType") == "1"  # 2nd class, sleeping
+            and ".CN" in (c.get("coachDesc") or "")  # only new CNR coaches (red seats)
         )
         out[t["trainNo"]] = (t["departureTime"], free)
     return out
@@ -126,7 +127,7 @@ def main():
         day += timedelta(days=1)
 
     if found:
-        lines = ["🚆 Появились места: 2-й класс, спальный, Бангкок → Чиангмай", ""]
+        lines = ["🚆 Появились места: новый поезд CNR, 2-й класс, спальный, Бангкок → Чиангмай", ""]
         for day, train, dep, free in found:
             mark = "✅ хватит всем" if free >= MIN_SEATS else "⚠️ мало"
             lines.append(f"{day:%d.%m (%a)} · поезд {train} · {dep} · мест: {free} {mark}")
